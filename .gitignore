@@ -1,0 +1,31 @@
+# Unity generated files
+Library/
+Logs/
+Temp/
+Builds/
+Build/
+obj/
+UserSettings/
+
+# Generated project files
+*.csproj
+*.sln
+*.slnx
+*.unityproj
+
+# VS Code
+.vscode/
+
+# Visual Studio
+.vs/
+*.meta
+
+# Build artifacts
+*.apk
+*.aab
+*.exe
+*.app
+
+# OS
+.DS_Store
+Thumbs.db
