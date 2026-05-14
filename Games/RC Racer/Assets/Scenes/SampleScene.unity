@@ -909,8 +909,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RampAssistZone
   assistAcceleration: 12
   minRampSpeed: 10
-  launchUpImpulse: 4
-  launchForwardImpulse: 3
+  launchUpImpulse: 8
+  launchForwardImpulse: 10
   rampLinearDamping: 0.2
   rampAngularDamping: 0.5
 --- !u!1001 &1538243569430029301

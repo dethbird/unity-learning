@@ -5,8 +5,8 @@ public class RampAssistZone : MonoBehaviour
 {
     [SerializeField] private float assistAcceleration = 12f;
     [SerializeField] private float minRampSpeed = 10f;
-    [SerializeField] private float launchUpImpulse = 4f;
-    [SerializeField] private float launchForwardImpulse = 3f;
+    [SerializeField] private float launchUpImpulse = 8f;
+    [SerializeField] private float launchForwardImpulse = 10f;
     [SerializeField] private float rampLinearDamping = 0.2f;
     [SerializeField] private float rampAngularDamping = 0.5f;
 

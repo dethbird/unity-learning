@@ -40,8 +40,11 @@ public class CarController : MonoBehaviour
     [SerializeField] private float groundCheckDistance = 0.45f;
     [SerializeField] private LayerMask groundLayerMask = ~0;
     [SerializeField] private float airborneExtraGravity = 35f;
+    [SerializeField] private float airborneSteerMultiplier = 0.35f;
+    [SerializeField] private float airborneYawResetSpeed = 8f;
     [SerializeField] private float maxFallSpeed = 25f;
     [SerializeField] private float landingAngularDamping = 0.5f;
+    [SerializeField] private float minLandingAlignSpeed = 2f;
 
     [Header("Reset Settings")]
     [SerializeField] private float resetHeight = 2f;
@@ -179,11 +182,32 @@ public class CarController : MonoBehaviour
 
     private void HandleSteering()
     {
+        float steerInput = input.Steer;
+
+        if (!isGrounded)
+        {
+            Vector3 airborneAngularVelocity = rb.angularVelocity;
+
+            if (Mathf.Abs(steerInput) <= 0.01f)
+            {
+                airborneAngularVelocity.y = Mathf.MoveTowards(airborneAngularVelocity.y, 0f, airborneYawResetSpeed * Time.fixedDeltaTime);
+            }
+            else
+            {
+                float airborneTurnAmount = steerInput * steerTorque * airborneSteerMultiplier;
+                rb.AddTorque(Vector3.up * airborneTurnAmount, ForceMode.Acceleration);
+                airborneAngularVelocity.y = Mathf.Clamp(airborneAngularVelocity.y, -maxAngularVelocity, maxAngularVelocity);
+            }
+
+            rb.angularVelocity = airborneAngularVelocity;
+            return;
+        }
+
         Vector3 planarVelocity = Vector3.ProjectOnPlane(rb.linearVelocity, groundNormal);
         Vector3 driveDirection = Vector3.ProjectOnPlane(-transform.forward, groundNormal).normalized;
         float forwardSpeed = Mathf.Abs(Vector3.Dot(planarVelocity, driveDirection));
 
-        if (Mathf.Abs(input.Steer) > 0.01f)
+        if (Mathf.Abs(steerInput) > 0.01f)
         {
             float speedRatio = Mathf.Clamp01(forwardSpeed / maxSpeed);
             float steerMultiplier = Mathf.Lerp(1f, minSteerMultiplierAtMaxSpeed, speedRatio);
@@ -198,7 +222,7 @@ public class CarController : MonoBehaviour
                 steerMultiplier *= handbrakeSteerMultiplier;
             }
 
-            float turnAmount = input.Steer * steerTorque * steerMultiplier;
+            float turnAmount = steerInput * steerTorque * steerMultiplier;
             rb.AddTorque(Vector3.up * turnAmount, ForceMode.Acceleration);
         }
 
@@ -282,11 +306,20 @@ public class CarController : MonoBehaviour
     private void AbsorbLandingImpact()
     {
         Vector3 velocity = rb.linearVelocity;
+        Vector3 planarVelocity = Vector3.ProjectOnPlane(velocity, Vector3.up);
 
         velocity.y = 0f;
 
+        if (planarVelocity.sqrMagnitude > minLandingAlignSpeed * minLandingAlignSpeed)
+        {
+            transform.rotation = Quaternion.LookRotation(-planarVelocity.normalized, Vector3.up);
+        }
+
         rb.linearVelocity = velocity;
-        rb.angularVelocity *= landingAngularDamping;
+
+        Vector3 angularVelocity = rb.angularVelocity;
+        angularVelocity.y = 0f;
+        rb.angularVelocity = angularVelocity;
     }
 
     private void ResetCar()
