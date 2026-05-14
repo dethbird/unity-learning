@@ -137,6 +137,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CarInputReader
   logInputs: 0
+--- !u!4 &266216042 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8859323312105856893, guid: 30fb3f202591c504f881cae1a361aa42, type: 3}
+  m_PrefabInstance: {fileID: 1538243569430029301}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &330585543
 GameObject:
   m_ObjectHideFlags: 0
@@ -149,6 +154,7 @@ GameObject:
   - component: {fileID: 330585545}
   - component: {fileID: 330585544}
   - component: {fileID: 330585547}
+  - component: {fileID: 330585548}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -274,6 +280,21 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!114 &330585548
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 330585543}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e910df3a32bff347aa5d0369cd38ae6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::IsometricCameraFollow
+  target: {fileID: 266216042}
+  offset: {x: -17.6, y: 9.5, z: -13.4}
+  smoothTime: 0.2
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
