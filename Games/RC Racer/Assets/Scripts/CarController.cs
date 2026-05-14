@@ -22,6 +22,7 @@ public class CarController : MonoBehaviour
     private float boostTimer = 0f;
     private float boostCooldownTimer = 0f;
     private bool isBoosting = false;
+    public bool IsBoosting => isBoosting;
     public bool CanBoost => boostCooldownTimer <= 0f;
     public float BoostChargePercent => CanBoost ? 1f : 1f - (boostCooldownTimer / boostCooldown);
 

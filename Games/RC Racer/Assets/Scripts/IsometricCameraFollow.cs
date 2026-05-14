@@ -13,15 +13,34 @@ public class IsometricCameraFollow : MonoBehaviour
     [SerializeField] private float maxLookAheadSpeed = 20f;
     [SerializeField] private float lookAheadSmoothTime = 0.15f;
 
+    [Header("Framing Effects")]
+    [SerializeField] private float boostPullbackDistance = 2.5f;
+    [SerializeField] private float boostVelocityLookAheadMultiplier = 1.75f;
+    [SerializeField] private float handbrakeLookAheadMultiplier = 0.4f;
+    [SerializeField] private float boostZoomOutAmount = 0.4f;
+    [SerializeField] private float handbrakeZoomInAmount = 0.75f;
+    [SerializeField] private float orthographicSizeSmoothTime = 0.12f;
+
     private Vector3 offset;
     private Vector3 followVelocity;
     private Vector3 currentLookAhead;
     private Vector3 lookAheadVelocity;
+    private Camera targetCamera;
+    private float baseOrthographicSize;
+    private float orthographicSizeVelocity;
     private Rigidbody targetRigidbody;
+    private CarController targetCarController;
+    private CarInputReader targetInputReader;
     private Transform cachedTarget;
 
     private void Start()
     {
+        targetCamera = GetComponent<Camera>();
+        if (targetCamera != null)
+        {
+            baseOrthographicSize = targetCamera.orthographicSize;
+        }
+
         CacheTargetRigidbody();
         InitializeOffset();
     }
@@ -35,6 +54,8 @@ public class IsometricCameraFollow : MonoBehaviour
     {
         cachedTarget = target;
         targetRigidbody = target ? target.GetComponent<Rigidbody>() : null;
+        targetCarController = target ? target.GetComponent<CarController>() : null;
+        targetInputReader = target ? target.GetComponent<CarInputReader>() : null;
 
         if (enableTargetInterpolation && targetRigidbody != null && targetRigidbody.interpolation == RigidbodyInterpolation.None)
         {
@@ -75,8 +96,25 @@ public class IsometricCameraFollow : MonoBehaviour
             if (planarVelocity.sqrMagnitude > 0.001f)
             {
                 float speedFactor = Mathf.Clamp01(planarVelocity.magnitude / maxLookAheadSpeed);
-                desiredLookAhead += planarVelocity.normalized * (velocityLookAheadDistance * speedFactor);
+                float velocityLookAhead = velocityLookAheadDistance;
+
+                if (targetCarController != null && targetCarController.IsBoosting)
+                {
+                    velocityLookAhead *= boostVelocityLookAheadMultiplier;
+                }
+
+                desiredLookAhead += planarVelocity.normalized * (velocityLookAhead * speedFactor);
             }
+        }
+
+        if (targetCarController != null && targetCarController.IsBoosting)
+        {
+            desiredLookAhead -= targetForward * boostPullbackDistance;
+        }
+
+        if (targetInputReader != null && targetInputReader.HandbrakeHeld)
+        {
+            desiredLookAhead *= handbrakeLookAheadMultiplier;
         }
 
         return desiredLookAhead;
@@ -111,5 +149,26 @@ public class IsometricCameraFollow : MonoBehaviour
             desiredPosition,
             ref followVelocity,
             smoothTime);
+
+        if (targetCamera != null && targetCamera.orthographic)
+        {
+            float desiredOrthographicSize = baseOrthographicSize;
+
+            if (targetCarController != null && targetCarController.IsBoosting)
+            {
+                desiredOrthographicSize += boostZoomOutAmount;
+            }
+
+            if (targetInputReader != null && targetInputReader.HandbrakeHeld)
+            {
+                desiredOrthographicSize = Mathf.Max(0.1f, baseOrthographicSize - handbrakeZoomInAmount);
+            }
+
+            targetCamera.orthographicSize = Mathf.SmoothDamp(
+                targetCamera.orthographicSize,
+                desiredOrthographicSize,
+                ref orthographicSizeVelocity,
+                orthographicSizeSmoothTime);
+        }
     }
 }
