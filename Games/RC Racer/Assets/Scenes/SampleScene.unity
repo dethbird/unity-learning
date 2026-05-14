@@ -295,6 +295,7 @@ MonoBehaviour:
   target: {fileID: 266216042}
   offset: {x: -17.6, y: 9.5, z: -13.4}
   smoothTime: 0.2
+  enableTargetInterpolation: 1
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -537,7 +538,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: f9b90b33232f8ef42af4f4857d8444c9, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -595,6 +596,10 @@ PrefabInstance:
     - target: {fileID: 867637079423294738, guid: 30fb3f202591c504f881cae1a361aa42, type: 3}
       propertyPath: m_Name
       value: Player
+      objectReference: {fileID: 0}
+    - target: {fileID: 5154162842871551267, guid: 30fb3f202591c504f881cae1a361aa42, type: 3}
+      propertyPath: m_Interpolate
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6574404861574666289, guid: 30fb3f202591c504f881cae1a361aa42, type: 3}
       propertyPath: m_LocalRotation.w
