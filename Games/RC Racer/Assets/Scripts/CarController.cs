@@ -35,6 +35,15 @@ public class CarController : MonoBehaviour
     [SerializeField] private float handbrakeYawDamping = 0.9f;
     [SerializeField] private float handbrakeBrakeAcceleration = 1.12f;
 
+    [Header("Ground / Air")]
+    [SerializeField] private float groundCheckDistance = 0.45f;
+    [SerializeField] private LayerMask groundLayerMask = ~0;
+    [SerializeField] private float airborneExtraGravity = 35f;
+    [SerializeField] private float groundedDownforce = 2f;
+    [SerializeField] private float maxFallSpeed = 25f;
+    [SerializeField] private float landingVerticalDamping = 0.15f;
+    [SerializeField] private float landingAngularDamping = 0.5f;
+
     [Header("Reset Settings")]
     [SerializeField] private float resetHeight = 2f;
 
@@ -43,13 +52,20 @@ public class CarController : MonoBehaviour
     [SerializeField] private bool logInputValues = false;
 
     private Rigidbody rb;
+    private Collider carCollider;
     private CarInputReader input;
     private Vector3 spawnPosition;
     private Quaternion spawnRotation;
+    private bool isGrounded;
+    private bool wasGrounded;
+
+    public bool IsGrounded => isGrounded;
+    public bool IsAirborne => !isGrounded;
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
+        carCollider = GetComponent<Collider>();
         input = GetComponent<CarInputReader>();
 
         spawnPosition = transform.position;
@@ -69,6 +85,15 @@ public class CarController : MonoBehaviour
 
     private void FixedUpdate()
     {
+        wasGrounded = isGrounded;
+        UpdateGrounded();
+
+        if (!wasGrounded && isGrounded)
+        {
+            AbsorbLandingImpact();
+        }
+
+        ApplyGravityAndDownforce();
         UpdateBoost();
         HandleThrottle();
         HandleSteering();
@@ -115,6 +140,11 @@ public class CarController : MonoBehaviour
 
     private void HandleThrottle()
     {
+        if (!isGrounded)
+        {
+            return;
+        }
+
         float currentSpeed = rb.linearVelocity.magnitude;
         float driveInput = input.Throttle - input.Brake;
         float effectiveMaxSpeed = isBoosting
@@ -196,6 +226,50 @@ public class CarController : MonoBehaviour
         }
 
         rb.linearVelocity = forwardVelocity + sidewaysVelocity * normalSideGrip;
+    }
+
+    private void UpdateGrounded()
+    {
+        Vector3 origin = transform.position + Vector3.up * 0.1f;
+        float rayDistance = groundCheckDistance;
+
+        if (carCollider != null)
+        {
+            origin = carCollider.bounds.center;
+            rayDistance = carCollider.bounds.extents.y + groundCheckDistance;
+        }
+
+        isGrounded = Physics.Raycast(origin, Vector3.down, rayDistance, groundLayerMask, QueryTriggerInteraction.Ignore);
+    }
+
+    private void ApplyGravityAndDownforce()
+    {
+        if (isGrounded)
+        {
+            float speed = rb.linearVelocity.magnitude;
+            float speedFactor = Mathf.Clamp01(speed / Mathf.Max(0.01f, maxSpeed));
+            rb.AddForce(Vector3.down * groundedDownforce * speedFactor, ForceMode.Acceleration);
+            return;
+        }
+
+        rb.AddForce(Vector3.down * airborneExtraGravity, ForceMode.Acceleration);
+
+        Vector3 velocity = rb.linearVelocity;
+        if (velocity.y < -maxFallSpeed)
+        {
+            velocity.y = -maxFallSpeed;
+            rb.linearVelocity = velocity;
+        }
+    }
+
+    private void AbsorbLandingImpact()
+    {
+        Vector3 velocity = rb.linearVelocity;
+
+        velocity.y = 0f;
+
+        rb.linearVelocity = velocity;
+        rb.angularVelocity *= landingAngularDamping;
     }
 
     private void ResetCar()
