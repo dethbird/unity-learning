@@ -5,7 +5,6 @@ public class RampAssistZone : MonoBehaviour
 {
     [SerializeField] private float assistAcceleration = 12f;
     [SerializeField] private float minRampSpeed = 10f;
-    [SerializeField] private float launchUpImpulse = 8f;
     [SerializeField] private float launchForwardImpulse = 10f;
     [SerializeField] private float rampLinearDamping = 0.2f;
     [SerializeField] private float rampAngularDamping = 0.5f;
@@ -47,7 +46,7 @@ public class RampAssistZone : MonoBehaviour
             return;
         }
 
-        Vector3 rampDirection = transform.forward.normalized;
+        Vector3 rampDirection = GetPlanarRampDirection();
 
         rb.AddForce(rampDirection * assistAcceleration, ForceMode.Acceleration);
 
@@ -74,9 +73,19 @@ public class RampAssistZone : MonoBehaviour
 
         RestoreDamping(rb);
 
-        Vector3 rampDirection = transform.forward.normalized;
-        rb.AddForce(Vector3.up * launchUpImpulse, ForceMode.Impulse);
+        Vector3 rampDirection = GetPlanarRampDirection();
         rb.AddForce(rampDirection * launchForwardImpulse, ForceMode.Impulse);
+    }
+
+    private Vector3 GetPlanarRampDirection()
+    {
+        Vector3 planarDirection = Vector3.ProjectOnPlane(transform.forward, Vector3.up);
+        if (planarDirection.sqrMagnitude < 0.0001f)
+        {
+            return transform.forward.normalized;
+        }
+
+        return planarDirection.normalized;
     }
 
     private void OnDisable()
