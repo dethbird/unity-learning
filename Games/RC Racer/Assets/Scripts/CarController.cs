@@ -5,17 +5,18 @@ using UnityEngine;
 public class CarController : MonoBehaviour
 {
     [Header("Movement Settings")]
-    [SerializeField] private float motorForce = 1500f;
-    [SerializeField] private float brakeForce = 3000f;
-    [SerializeField] private float maxSpeed = 20f;
-    [SerializeField] private float steerTorque = 300f;
+    [SerializeField] private float motorForce = 500f;
+    [SerializeField] private float brakeForce = 1000f;
+    [SerializeField] private float maxSpeed = 15f;
+    [SerializeField] private float steerTorque = 100f;
+    [SerializeField] private float maxAngularVelocity = 3f;
 
     [Header("Boost Settings")]
-    [SerializeField] private float boostMultiplier = 2f;
+    [SerializeField] private float boostMultiplier = 1.5f;
 
     [Header("Handbrake Settings")]
-    [SerializeField] private float handbrakeDrag = 5f;
-    private float normalDrag = 0.5f;
+    [SerializeField] private float handbrakeDrag = 3f;
+    private float normalDrag;
 
     [Header("Reset Settings")]
     [SerializeField] private float resetHeight = 2f;
@@ -95,10 +96,15 @@ public class CarController : MonoBehaviour
 
     private void HandleSteering()
     {
-        if (Mathf.Abs(input.Steer) > 0.1f)
+        if (Mathf.Abs(input.Steer) > 0.01f)
         {
             float turnAmount = input.Steer * steerTorque;
-            rb.AddTorque(transform.up * turnAmount, ForceMode.Force);
+            rb.AddTorque(transform.up * turnAmount, ForceMode.Acceleration);
+        }
+
+        if (rb.angularVelocity.magnitude > maxAngularVelocity)
+        {
+            rb.angularVelocity = rb.angularVelocity.normalized * maxAngularVelocity;
         }
     }
 

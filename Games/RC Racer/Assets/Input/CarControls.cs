@@ -160,18 +160,7 @@ public partial class @CarControls: IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""8d93b1fd-31aa-448a-9fea-bf3231ed4c8e"",
-                    ""path"": ""<Gamepad>/leftStick/left"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""Steer"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
-                    ""id"": ""f1b5ac43-3457-44b3-82f7-df07f481a3c9"",
-                    ""path"": ""<Gamepad>/leftStick/right"",
+                    ""path"": ""<Gamepad>/leftStick/x"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
