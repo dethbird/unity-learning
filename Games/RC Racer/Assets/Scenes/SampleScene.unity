@@ -229,13 +229,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.14874394, y: 0.4866607, z: -0.084498316, w: 0.8566778}
-  m_LocalPosition: {x: -17.62, y: 9.47, z: -13.36}
+  m_LocalRotation: {x: 0.272532, y: 0.4030582, z: -0.12708373, w: 0.86436117}
+  m_LocalPosition: {x: -6.54, y: 7.04, z: -5.55}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 19.7, y: 59.2, z: 0}
+  m_LocalEulerAnglesHint: {x: 35, y: 50, z: 0}
 --- !u!114 &330585547
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -293,9 +293,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IsometricCameraFollow
   target: {fileID: 266216042}
-  offset: {x: -17.6, y: 9.5, z: -13.4}
   smoothTime: 0.2
   enableTargetInterpolation: 1
+  invertTargetForward: 1
+  forwardLookAheadDistance: 4
+  velocityLookAheadDistance: 6
+  maxLookAheadSpeed: 20
+  lookAheadSmoothTime: 0.15
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
