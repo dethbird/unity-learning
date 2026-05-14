@@ -12,10 +12,18 @@ public class CarController : MonoBehaviour
     [SerializeField] private float maxAngularVelocity = 3f;
 
     [Header("Boost Settings")]
-    [SerializeField] private float boostMultiplier = 1.5f;
+    [SerializeField] private float boostMultiplier = 1.8f;
+    [SerializeField] private float boostDuration = 2f;
+    [SerializeField] private float boostCooldown = 3f;
+    private float boostTimer = 0f;
+    private float boostCooldownTimer = 0f;
+    private bool isBoosting = false;
+    public bool CanBoost => boostCooldownTimer <= 0f;
+    public float BoostChargePercent => CanBoost ? 1f : 1f - (boostCooldownTimer / boostCooldown);
 
     [Header("Handbrake Settings")]
-    [SerializeField] private float handbrakeDrag = 3f;
+    [SerializeField] private float handbrakeDriftTorqueMultiplier = 2f;
+    [SerializeField] private float handbrakeSidewaysDampening = 0.5f;
     private float normalDrag;
 
     [Header("Reset Settings")]
@@ -53,6 +61,7 @@ public class CarController : MonoBehaviour
 
     private void FixedUpdate()
     {
+        UpdateBoost();
         HandleThrottle();
         HandleSteering();
         HandleHandbrake();
@@ -69,6 +78,30 @@ public class CarController : MonoBehaviour
         {
             Debug.Log("Pause pressed - implement pause menu here");
         }
+
+        if (input.BoostHeld && CanBoost && !isBoosting)
+        {
+            isBoosting = true;
+            boostTimer = boostDuration;
+        }
+    }
+
+    private void UpdateBoost()
+    {
+        if (isBoosting)
+        {
+            boostTimer -= Time.fixedDeltaTime;
+            if (boostTimer <= 0f)
+            {
+                isBoosting = false;
+                boostCooldownTimer = boostCooldown;
+            }
+        }
+
+        if (boostCooldownTimer > 0f)
+        {
+            boostCooldownTimer -= Time.fixedDeltaTime;
+        }
     }
 
     private void HandleThrottle()
@@ -80,7 +113,7 @@ public class CarController : MonoBehaviour
         {
             float force = motorForce * driveInput;
 
-            if (input.BoostHeld && driveInput > 0)
+            if (isBoosting && driveInput > 0)
             {
                 force *= boostMultiplier;
             }
@@ -89,7 +122,7 @@ public class CarController : MonoBehaviour
 
             if (logInputValues)
             {
-                Debug.Log($"DRIVE - Input: {driveInput:F2}, Force: {force}, Speed: {currentSpeed:F2}");
+                Debug.Log($"DRIVE - Input: {driveInput:F2}, Force: {force}, Boost: {isBoosting}, Speed: {currentSpeed:F2}");
             }
         }
     }
@@ -98,13 +131,15 @@ public class CarController : MonoBehaviour
     {
         if (Mathf.Abs(input.Steer) > 0.01f)
         {
-            float turnAmount = input.Steer * steerTorque;
+            float turnMultiplier = input.HandbrakeHeld ? handbrakeDriftTorqueMultiplier : 1f;
+            float turnAmount = input.Steer * steerTorque * turnMultiplier;
             rb.AddTorque(transform.up * turnAmount, ForceMode.Acceleration);
         }
 
-        if (rb.angularVelocity.magnitude > maxAngularVelocity)
+        float maxAngularVel = input.HandbrakeHeld ? maxAngularVelocity * 1.5f : maxAngularVelocity;
+        if (rb.angularVelocity.magnitude > maxAngularVel)
         {
-            rb.angularVelocity = rb.angularVelocity.normalized * maxAngularVelocity;
+            rb.angularVelocity = rb.angularVelocity.normalized * maxAngularVel;
         }
     }
 
@@ -112,11 +147,10 @@ public class CarController : MonoBehaviour
     {
         if (input.HandbrakeHeld)
         {
-            rb.linearDamping = handbrakeDrag;
-        }
-        else
-        {
-            rb.linearDamping = normalDrag;
+            Vector3 forwardVelocity = Vector3.Project(rb.linearVelocity, -transform.forward);
+            Vector3 sidewaysVelocity = rb.linearVelocity - forwardVelocity;
+
+            rb.linearVelocity = forwardVelocity + (sidewaysVelocity * handbrakeSidewaysDampening);
         }
     }
 
