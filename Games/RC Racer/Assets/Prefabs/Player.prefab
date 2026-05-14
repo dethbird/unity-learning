@@ -28,14 +28,14 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 867637079423294738}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1959288505310305803}
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!54 &5154162842871551267
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -102,10 +102,12 @@ MonoBehaviour:
   steerTorque: 140
   maxAngularVelocity: 3.5
   minSteerMultiplierAtMaxSpeed: 0.55
-  boostMultiplier: 2
+  boostForceMultiplier: 3
+  boostMaxSpeedMultiplier: 1.4
+  boostImpulse: 12
   boostDuration: 2
   boostCooldown: 3
-  boostSteerMultiplier: 0.8
+  boostSteerMultiplier: 1.15
   handbrakeSteerMultiplier: 1.15
   normalSideGrip: 0.65
   handbrakeSideGrip: 0.99

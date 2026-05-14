@@ -12,6 +12,7 @@ public class CarInputReader : MonoBehaviour
     public float Brake { get; private set; }
 
     public bool BoostHeld { get; private set; }
+    public bool BoostPressedThisFrame { get; private set; }
     public bool HandbrakeHeld { get; private set; }
     public bool ResetPressedThisFrame { get; private set; }
     public bool PausePressedThisFrame { get; private set; }
@@ -51,6 +52,7 @@ public class CarInputReader : MonoBehaviour
         Brake = controls.Driving.Brake.ReadValue<float>();
 
         BoostHeld = controls.Driving.Boost.IsPressed();
+        BoostPressedThisFrame = controls.Driving.Boost.WasPressedThisFrame();
         HandbrakeHeld = controls.Driving.Handbrake.IsPressed();
 
         ResetPressedThisFrame = controls.Driving.Reset.WasPressedThisFrame();

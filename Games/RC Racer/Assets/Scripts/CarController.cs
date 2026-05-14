@@ -7,16 +7,18 @@ public class CarController : MonoBehaviour
     [Header("Movement Settings")]
     [SerializeField] private float motorForce = 2400f;
     [SerializeField] private float brakeForce = 1000f;
-    [SerializeField] private float maxSpeed = 30f;
+    [SerializeField] private float maxSpeed = 20f;
     [SerializeField] private float steerTorque = 140f;
     [SerializeField] private float maxAngularVelocity = 3.5f;
     [SerializeField] private float minSteerMultiplierAtMaxSpeed = 0.55f;
 
     [Header("Boost Settings")]
-    [SerializeField] private float boostMultiplier = 2f;
-    [SerializeField] private float boostDuration = 2f;
+    [SerializeField] private float boostForceMultiplier = 3f;
+    [SerializeField] private float boostMaxSpeedMultiplier = 1.4f;
+    [SerializeField] private float boostImpulse = 12f;
+    [SerializeField] private float boostDuration = 0.75f;
     [SerializeField] private float boostCooldown = 3f;
-    [SerializeField] private float boostSteerMultiplier = 0.8f;
+    [SerializeField] private float boostSteerMultiplier = 1.15f;
     private float boostTimer = 0f;
     private float boostCooldownTimer = 0f;
     private bool isBoosting = false;
@@ -84,10 +86,11 @@ public class CarController : MonoBehaviour
             Debug.Log("Pause pressed - implement pause menu here");
         }
 
-        if (input.BoostHeld && CanBoost && !isBoosting)
+        if (input.BoostPressedThisFrame && CanBoost && !isBoosting)
         {
             isBoosting = true;
             boostTimer = boostDuration;
+            rb.AddForce(-transform.forward * boostImpulse, ForceMode.Impulse);
         }
     }
 
@@ -113,14 +116,17 @@ public class CarController : MonoBehaviour
     {
         float currentSpeed = rb.linearVelocity.magnitude;
         float driveInput = input.Throttle - input.Brake;
+        float effectiveMaxSpeed = isBoosting
+            ? maxSpeed * boostMaxSpeedMultiplier
+            : maxSpeed;
 
-        if (Mathf.Abs(driveInput) > 0.01f && currentSpeed < maxSpeed)
+        if (Mathf.Abs(driveInput) > 0.01f && currentSpeed < effectiveMaxSpeed)
         {
             float force = motorForce * driveInput;
 
             if (isBoosting && driveInput > 0)
             {
-                force *= boostMultiplier;
+                force *= boostForceMultiplier;
             }
 
             rb.AddForce(-transform.forward * force, ForceMode.Force);
