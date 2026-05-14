@@ -1,31 +1,76 @@
-# Unity generated files
-Library/
-Logs/
-Temp/
-Builds/
-Build/
-obj/
+# =========================================
+# Unity Generated Folders
+# =========================================
+
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Mm]emoryCaptures/
 UserSettings/
 
-# Generated project files
-*.csproj
-*.sln
-*.slnx
-*.unityproj
+# =========================================
+# Visual Studio / Rider
+# =========================================
 
-# VS Code
-.vscode/
-
-# Visual Studio
 .vs/
-*.meta
+.idea/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
 
-# Build artifacts
+# =========================================
+# Unity Auto Generated
+# =========================================
+
 *.apk
 *.aab
-*.exe
-*.app
+*.unitypackage
 
-# OS
+# =========================================
+# Blender Backup Files
+# =========================================
+
+*.blend1
+*.blend2
+*.blend@
+*.blend~
+
+# =========================================
+# OS Files
+# =========================================
+
 .DS_Store
 Thumbs.db
+
+# =========================================
+# Crash Dumps
+# =========================================
+
+sysinfo.txt
+
+# =========================================
+# Ignore large local captures if needed
+# =========================================
+
+Capture/
+
+# =========================================
+# KEEP THESE
+# =========================================
+#!Assets/
+#!Packages/
+#!ProjectSettings/
