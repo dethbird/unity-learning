@@ -259,7 +259,7 @@ public partial class @CarControls: IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""25fa02ff-43da-49be-bd69-2716153aba64"",
-                    ""path"": ""<Gamepad>/rightShoulder"",
+                    ""path"": ""<Gamepad>/buttonWest"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",

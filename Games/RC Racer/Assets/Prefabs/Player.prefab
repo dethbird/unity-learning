@@ -96,16 +96,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 78ad0035f64abb549b6237fba1a503f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CarController
-  motorForce: 1500
-  brakeForce: 3000
-  maxSpeed: 20
-  steerTorque: 300
-  maxAngularVelocity: 3
+  motorForce: 2400
+  brakeForce: 1000
+  maxSpeed: 30
+  steerTorque: 140
+  maxAngularVelocity: 3.5
+  minSteerMultiplierAtMaxSpeed: 0.55
   boostMultiplier: 2
-  handbrakeDrag: 5
+  boostDuration: 2
+  boostCooldown: 3
+  boostSteerMultiplier: 0.8
+  handbrakeSteerMultiplier: 1.15
+  normalSideGrip: 0.65
+  handbrakeSideGrip: 0.99
+  handbrakeForwardBleed: 0.994
+  handbrakeSpeedBleed: 0.994
+  handbrakeYawDamping: 0.9
+  handbrakeBrakeAcceleration: 1.12
   resetHeight: 2
   showDebugGizmos: 1
-  logInputValues: 1
+  logInputValues: 0
 --- !u!114 &5407502519339958327
 MonoBehaviour:
   m_ObjectHideFlags: 0
