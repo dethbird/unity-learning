@@ -5,8 +5,8 @@ using UnityEngine;
 public class CarController : MonoBehaviour
 {
     [Header("Movement Settings")]
-    [SerializeField] private float motorForce = 2400f;
-    [SerializeField] private float brakeForce = 1000f;
+    [SerializeField] private float motorForce = 400f;
+    [SerializeField] private float brakeForce = 400f;
     [SerializeField] private float maxSpeed = 20f;
     [SerializeField] private float steerTorque = 140f;
     [SerializeField] private float maxAngularVelocity = 3.5f;
@@ -39,9 +39,7 @@ public class CarController : MonoBehaviour
     [SerializeField] private float groundCheckDistance = 0.45f;
     [SerializeField] private LayerMask groundLayerMask = ~0;
     [SerializeField] private float airborneExtraGravity = 35f;
-    [SerializeField] private float groundedDownforce = 2f;
     [SerializeField] private float maxFallSpeed = 25f;
-    [SerializeField] private float landingVerticalDamping = 0.15f;
     [SerializeField] private float landingAngularDamping = 0.5f;
 
     [Header("Reset Settings")]
@@ -58,6 +56,7 @@ public class CarController : MonoBehaviour
     private Quaternion spawnRotation;
     private bool isGrounded;
     private bool wasGrounded;
+    private Vector3 groundNormal = Vector3.up;
 
     public bool IsGrounded => isGrounded;
     public bool IsAirborne => !isGrounded;
@@ -68,9 +67,10 @@ public class CarController : MonoBehaviour
         carCollider = GetComponent<Collider>();
         input = GetComponent<CarInputReader>();
 
+        rb.constraints = RigidbodyConstraints.FreezeRotationX;
+
         spawnPosition = transform.position;
         spawnRotation = transform.rotation;
-
     }
 
     private void OnDrawGizmos()
@@ -93,7 +93,7 @@ public class CarController : MonoBehaviour
             AbsorbLandingImpact();
         }
 
-        ApplyGravityAndDownforce();
+        ApplyAirborneGravity();
         UpdateBoost();
         HandleThrottle();
         HandleSteering();
@@ -160,7 +160,8 @@ public class CarController : MonoBehaviour
                 force *= boostForceMultiplier;
             }
 
-            rb.AddForce(-transform.forward * force, ForceMode.Force);
+            Vector3 driveDirection = Vector3.ProjectOnPlane(-transform.forward, groundNormal).normalized;
+            rb.AddForce(driveDirection * force, ForceMode.Force);
 
             if (logInputValues)
             {
@@ -171,6 +172,8 @@ public class CarController : MonoBehaviour
 
     private void HandleSteering()
     {
+        Vector3 steerAxis = (isGrounded ? groundNormal : Vector3.up).normalized;
+
         if (Mathf.Abs(input.Steer) > 0.01f)
         {
             float speedRatio = Mathf.Clamp01(rb.linearVelocity.magnitude / maxSpeed);
@@ -187,21 +190,28 @@ public class CarController : MonoBehaviour
             }
 
             float turnAmount = input.Steer * steerTorque * steerMultiplier;
-            rb.AddTorque(transform.up * turnAmount, ForceMode.Acceleration);
+            rb.AddTorque(steerAxis * turnAmount, ForceMode.Acceleration);
         }
 
-        if (rb.angularVelocity.magnitude > maxAngularVelocity)
+        Vector3 angularVelocity = rb.angularVelocity;
+        Vector3 steerAngularVelocity = Vector3.Project(angularVelocity, steerAxis);
+
+        if (steerAngularVelocity.magnitude > maxAngularVelocity)
         {
-            rb.angularVelocity = rb.angularVelocity.normalized * maxAngularVelocity;
+            Vector3 otherAngularVelocity = angularVelocity - steerAngularVelocity;
+            rb.angularVelocity = otherAngularVelocity + steerAngularVelocity.normalized * maxAngularVelocity;
         }
     }
 
     private void HandleHandbrake()
     {
+        if (!isGrounded) return;
+
         Vector3 forwardDir = -transform.forward;
         Vector3 rightDir = transform.right;
 
         Vector3 velocity = rb.linearVelocity;
+        Vector3 verticalVelocity = Vector3.Project(velocity, Vector3.up);
 
         Vector3 forwardVelocity = Vector3.Project(velocity, forwardDir);
         Vector3 sidewaysVelocity = Vector3.Project(velocity, rightDir);
@@ -211,7 +221,7 @@ public class CarController : MonoBehaviour
             forwardVelocity *= handbrakeForwardBleed;
             sidewaysVelocity *= handbrakeSideGrip;
 
-            rb.linearVelocity = (forwardVelocity + sidewaysVelocity) * handbrakeSpeedBleed;
+            rb.linearVelocity = (forwardVelocity + sidewaysVelocity) * handbrakeSpeedBleed + verticalVelocity;
 
             if (forwardVelocity.sqrMagnitude > 0.01f)
             {
@@ -225,7 +235,7 @@ public class CarController : MonoBehaviour
             return;
         }
 
-        rb.linearVelocity = forwardVelocity + sidewaysVelocity * normalSideGrip;
+        rb.linearVelocity = forwardVelocity + sidewaysVelocity * normalSideGrip + verticalVelocity;
     }
 
     private void UpdateGrounded()
@@ -239,18 +249,21 @@ public class CarController : MonoBehaviour
             rayDistance = carCollider.bounds.extents.y + groundCheckDistance;
         }
 
-        isGrounded = Physics.Raycast(origin, Vector3.down, rayDistance, groundLayerMask, QueryTriggerInteraction.Ignore);
+        if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, rayDistance, groundLayerMask, QueryTriggerInteraction.Ignore))
+        {
+            isGrounded = true;
+            groundNormal = hit.normal;
+        }
+        else
+        {
+            isGrounded = false;
+            groundNormal = Vector3.up;
+        }
     }
 
-    private void ApplyGravityAndDownforce()
+    private void ApplyAirborneGravity()
     {
-        if (isGrounded)
-        {
-            float speed = rb.linearVelocity.magnitude;
-            float speedFactor = Mathf.Clamp01(speed / Mathf.Max(0.01f, maxSpeed));
-            rb.AddForce(Vector3.down * groundedDownforce * speedFactor, ForceMode.Acceleration);
-            return;
-        }
+        if (isGrounded) return;
 
         rb.AddForce(Vector3.down * airborneExtraGravity, ForceMode.Acceleration);
 

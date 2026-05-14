@@ -836,6 +836,14 @@ PrefabInstance:
       value: 4
       objectReference: {fileID: 0}
     - target: {fileID: -3777785948764306775, guid: 30fb3f202591c504f881cae1a361aa42, type: 3}
+      propertyPath: brakeForce
+      value: 400
+      objectReference: {fileID: 0}
+    - target: {fileID: -3777785948764306775, guid: 30fb3f202591c504f881cae1a361aa42, type: 3}
+      propertyPath: motorForce
+      value: 450
+      objectReference: {fileID: 0}
+    - target: {fileID: -3777785948764306775, guid: 30fb3f202591c504f881cae1a361aa42, type: 3}
       propertyPath: extraGravity
       value: 12
       objectReference: {fileID: 0}
@@ -849,15 +857,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5154162842871551267, guid: 30fb3f202591c504f881cae1a361aa42, type: 3}
       propertyPath: m_Mass
-      value: 50
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 5154162842871551267, guid: 30fb3f202591c504f881cae1a361aa42, type: 3}
       propertyPath: m_Constraints
-      value: 0
+      value: 16
       objectReference: {fileID: 0}
     - target: {fileID: 5154162842871551267, guid: 30fb3f202591c504f881cae1a361aa42, type: 3}
       propertyPath: m_Interpolate
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5154162842871551267, guid: 30fb3f202591c504f881cae1a361aa42, type: 3}
+      propertyPath: m_CollisionDetection
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 6574404861574666289, guid: 30fb3f202591c504f881cae1a361aa42, type: 3}
       propertyPath: m_LocalRotation.w
