@@ -40,6 +40,7 @@ public class CarController : MonoBehaviour
     [SerializeField] private float throttleVelocityAlignRate = 8f;
     [SerializeField] private float maxFallSpeed = 25f;
     [SerializeField] private float maxLaunchSpeed = 25f;
+    [SerializeField] private float groundProbeForwardOffset = 0.6f;
 
     [SerializeField] private float boosterImpulse = 18f;
 
@@ -51,7 +52,7 @@ public class CarController : MonoBehaviour
     [SerializeField] private bool logInputValues = false;
 
     private Rigidbody rb;
-    private Collider carCollider;
+    private Collider[] carColliders;
     private CarInputReader input;
     private Vector3 spawnPosition;
     private Quaternion spawnRotation;
@@ -62,6 +63,7 @@ public class CarController : MonoBehaviour
     private float groundedDrag;
     private bool isOnAccelerator;
     private readonly HashSet<Collider> boosterContacts = new HashSet<Collider>();
+    private readonly HashSet<Collider> selfColliders = new HashSet<Collider>();
 
     public bool IsGrounded => isGrounded;
     public bool IsAirborne => !isGrounded;
@@ -69,8 +71,17 @@ public class CarController : MonoBehaviour
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
-        carCollider = GetComponent<Collider>();
+        carColliders = GetComponentsInChildren<Collider>();
         input = GetComponent<CarInputReader>();
+
+        selfColliders.Clear();
+        foreach (Collider collider in carColliders)
+        {
+            if (collider != null && !collider.isTrigger)
+            {
+                selfColliders.Add(collider);
+            }
+        }
 
         rb.constraints = RigidbodyConstraints.FreezeRotationZ;
 
@@ -87,6 +98,21 @@ public class CarController : MonoBehaviour
             Gizmos.color = Color.blue;
             Gizmos.DrawLine(transform.position, transform.position + transform.forward * 3f);
             Gizmos.DrawSphere(transform.position + transform.forward * 3f, 0.2f);
+
+            if (TryGetGroundProbeData(out Vector3 centerOrigin, out Vector3 frontOrigin, out Vector3 rearOrigin, out float rayDistance))
+            {
+                Gizmos.color = Color.green;
+                Gizmos.DrawLine(centerOrigin, centerOrigin + Vector3.down * rayDistance);
+                Gizmos.DrawSphere(centerOrigin, 0.05f);
+
+                Gizmos.color = Color.yellow;
+                Gizmos.DrawLine(frontOrigin, frontOrigin + Vector3.down * rayDistance);
+                Gizmos.DrawSphere(frontOrigin, 0.05f);
+
+                Gizmos.color = Color.cyan;
+                Gizmos.DrawLine(rearOrigin, rearOrigin + Vector3.down * rayDistance);
+                Gizmos.DrawSphere(rearOrigin, 0.05f);
+            }
         }
     }
 
@@ -283,25 +309,132 @@ public class CarController : MonoBehaviour
 
     private void UpdateGrounded()
     {
-        Vector3 origin = transform.position + Vector3.up * 0.1f;
-        float rayDistance = groundCheckDistance;
-
-        if (carCollider != null)
+        if (!TryGetGroundProbeData(out Vector3 centerOrigin, out Vector3 frontOrigin, out Vector3 rearOrigin, out float rayDistance))
         {
-            origin = carCollider.bounds.center;
-            rayDistance = carCollider.bounds.extents.y + groundCheckDistance;
+            isGrounded = false;
+            groundNormal = Vector3.up;
+            return;
         }
 
-        if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, rayDistance, groundLayerMask, QueryTriggerInteraction.Ignore))
+        Vector3 normalSum = Vector3.zero;
+        int hitCount = 0;
+
+        if (TryGetGroundHit(centerOrigin, rayDistance, out RaycastHit centerHit))
+        {
+            normalSum += centerHit.normal;
+            hitCount++;
+        }
+
+        if (TryGetGroundHit(frontOrigin, rayDistance, out RaycastHit frontHit))
+        {
+            normalSum += frontHit.normal;
+            hitCount++;
+        }
+
+        if (TryGetGroundHit(rearOrigin, rayDistance, out RaycastHit rearHit))
+        {
+            normalSum += rearHit.normal;
+            hitCount++;
+        }
+
+        if (hitCount > 0)
         {
             isGrounded = true;
-            groundNormal = hit.normal.sqrMagnitude > 0.01f ? hit.normal : Vector3.up;
+            groundNormal = (normalSum / hitCount).normalized;
+            if (groundNormal.sqrMagnitude < 0.01f)
+            {
+                groundNormal = Vector3.up;
+            }
         }
         else
         {
             isGrounded = false;
             groundNormal = Vector3.up;
         }
+    }
+
+    private bool TryGetGroundProbeData(out Vector3 centerOrigin, out Vector3 frontOrigin, out Vector3 rearOrigin, out float rayDistance)
+    {
+        centerOrigin = transform.position + Vector3.up * 0.1f;
+        frontOrigin = centerOrigin;
+        rearOrigin = centerOrigin;
+        rayDistance = groundCheckDistance;
+
+        if (!TryGetCombinedColliderBounds(out Bounds bounds))
+        {
+            return false;
+        }
+
+        Vector3 probeForward = Vector3.ProjectOnPlane(-transform.forward, Vector3.up);
+        if (probeForward.sqrMagnitude < 0.0001f)
+        {
+            probeForward = -transform.forward;
+        }
+
+        probeForward.Normalize();
+
+        centerOrigin = bounds.center + Vector3.up * 0.1f;
+        float forwardOffset = Mathf.Max(bounds.extents.z * groundProbeForwardOffset, 0.1f);
+        frontOrigin = centerOrigin + probeForward * forwardOffset;
+        rearOrigin = centerOrigin - probeForward * forwardOffset;
+        rayDistance = bounds.extents.y + groundCheckDistance + 0.1f;
+        return true;
+    }
+
+    private bool TryGetCombinedColliderBounds(out Bounds bounds)
+    {
+        bounds = default;
+        bool hasBounds = false;
+
+        if (carColliders == null || carColliders.Length == 0)
+        {
+            carColliders = GetComponentsInChildren<Collider>();
+        }
+
+        foreach (Collider collider in carColliders)
+        {
+            if (collider == null || collider.isTrigger)
+            {
+                continue;
+            }
+
+            if (!hasBounds)
+            {
+                bounds = collider.bounds;
+                hasBounds = true;
+            }
+            else
+            {
+                bounds.Encapsulate(collider.bounds);
+            }
+        }
+
+        return hasBounds;
+    }
+
+    private bool TryGetGroundHit(Vector3 origin, float rayDistance, out RaycastHit groundHit)
+    {
+        groundHit = default;
+        RaycastHit[] hits = Physics.RaycastAll(origin, Vector3.down, rayDistance, groundLayerMask, QueryTriggerInteraction.Ignore);
+        float closestDistance = float.MaxValue;
+        bool foundHit = false;
+
+        foreach (RaycastHit hit in hits)
+        {
+            if (hit.collider == null || selfColliders.Contains(hit.collider))
+            {
+                continue;
+            }
+
+            if (hit.distance < closestDistance)
+            {
+                closestDistance = hit.distance;
+                groundHit = hit;
+                foundHit = true;
+            }
+        }
+
+        return foundHit;
     }
 
     private void OnCollisionEnter(Collision collision)
