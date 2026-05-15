@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
@@ -38,11 +39,9 @@ public class CarController : MonoBehaviour
     [SerializeField] private float airborneExtraGravity = 12f;
     [SerializeField] private float throttleVelocityAlignRate = 8f;
     [SerializeField] private float maxFallSpeed = 25f;
-    [SerializeField] private float maxLaunchSpeed = 1f;
+    [SerializeField] private float maxLaunchSpeed = 25f;
 
-    [SerializeField] private float pitchLevelStartDistance = 1.8f;
-    [SerializeField] private float preLandingFloatStrength = 10f;
-    [SerializeField] private float boosterImpulse = 0.05f;
+    [SerializeField] private float boosterImpulse = 18f;
 
     [Header("Reset Settings")]
     [SerializeField] private float resetHeight = 2f;
@@ -62,6 +61,7 @@ public class CarController : MonoBehaviour
     private float landingSteeringResetTimer;
     private float groundedDrag;
     private bool isOnAccelerator;
+    private readonly HashSet<Collider> boosterContacts = new HashSet<Collider>();
 
     public bool IsGrounded => isGrounded;
     public bool IsAirborne => !isGrounded;
@@ -95,6 +95,8 @@ public class CarController : MonoBehaviour
         bool wasOnAccelerator = isOnAccelerator;
         wasGrounded = isGrounded;
         UpdateGrounded();
+
+        isOnAccelerator = boosterContacts.Count > 0;
 
         if (!wasOnAccelerator && isOnAccelerator)
         {
@@ -294,24 +296,38 @@ public class CarController : MonoBehaviour
         {
             isGrounded = true;
             groundNormal = hit.normal.sqrMagnitude > 0.01f ? hit.normal : Vector3.up;
-            isOnAccelerator = hit.collider.CompareTag("Booster");
         }
         else
         {
             isGrounded = false;
             groundNormal = Vector3.up;
-            isOnAccelerator = false;
         }
     }
 
-    private float GetHeightAboveGround()
+    private void OnCollisionEnter(Collision collision)
     {
-        if (Physics.Raycast(transform.position, Vector3.down, out RaycastHit hit, 50f, groundLayerMask, QueryTriggerInteraction.Ignore))
-        {
-            return hit.distance;
-        }
+        TrackBoosterContact(collision.collider);
+    }
 
-        return float.MaxValue;
+    private void OnCollisionStay(Collision collision)
+    {
+        TrackBoosterContact(collision.collider);
+    }
+
+    private void OnCollisionExit(Collision collision)
+    {
+        if (collision.collider != null && collision.collider.CompareTag("Booster"))
+        {
+            boosterContacts.Remove(collision.collider);
+        }
+    }
+
+    private void TrackBoosterContact(Collider collider)
+    {
+        if (collider != null && collider.CompareTag("Booster"))
+        {
+            boosterContacts.Add(collider);
+        }
     }
 
     private void ApplyAirborneGravity()
@@ -325,28 +341,6 @@ public class CarController : MonoBehaviour
         {
             velocity.y = -maxFallSpeed;
             rb.linearVelocity = velocity;
-        }
-
-        // Pre-landing phase: smoothly level and cushion fall when close to ground
-        float heightAboveGround = GetHeightAboveGround();
-        if (heightAboveGround < pitchLevelStartDistance)
-        {
-            float t = 1f - Mathf.Clamp01(heightAboveGround / pitchLevelStartDistance);
-
-            // Steer angular velocity toward level pitch/roll — don't use MoveRotation
-            // as it fights gravity integration on non-kinematic rigidbodies
-            Vector3 angVel = rb.angularVelocity;
-            angVel.x = Mathf.MoveTowards(angVel.x, 0f, preLandingFloatStrength * t * Time.fixedDeltaTime);
-            angVel.z = Mathf.MoveTowards(angVel.z, 0f, preLandingFloatStrength * t * Time.fixedDeltaTime);
-            rb.angularVelocity = angVel;
-
-            // Once mostly level, add extra pull-down so the car snaps to the ground quickly
-            float pitchAngle = transform.eulerAngles.x;
-            if (pitchAngle > 180f) pitchAngle -= 360f;
-            if (Mathf.Abs(pitchAngle) < 15f)
-            {
-                rb.AddForce(Vector3.down * airborneExtraGravity * 3f * t, ForceMode.Acceleration);
-            }
         }
     }
 
