@@ -35,7 +35,7 @@ public class CarController : MonoBehaviour
     [Header("Ground / Air")]
     [SerializeField] private float groundCheckDistance = 0.45f;
     [SerializeField] private LayerMask groundLayerMask = ~0;
-    [SerializeField] private float airborneExtraGravity = 35f;
+    [SerializeField] private float airborneExtraGravity = 60f;
     [SerializeField] private float throttleVelocityAlignRate = 8f;
     [SerializeField] private float maxFallSpeed = 25f;
     [SerializeField] private float landingAngularDamping = 0.5f;
