@@ -6,6 +6,9 @@ public class IsometricCameraFollow : MonoBehaviour
     [SerializeField] private float smoothTime = 0.2f;
     [SerializeField] private bool enableTargetInterpolation = true;
 
+    [Header("Startup")]
+    [SerializeField] private Vector3 startupOffset = new Vector3(-6.54f, 7.04f, -5.55f);
+
     [Header("Look Ahead")]
     [SerializeField] private bool invertTargetForward = true;
     [SerializeField] private float forwardLookAheadDistance = 4f;
@@ -71,7 +74,8 @@ public class IsometricCameraFollow : MonoBehaviour
         }
 
         Vector3 targetPosition = targetRigidbody != null ? targetRigidbody.position : target.position;
-        offset = transform.position - targetPosition;
+        offset = startupOffset;
+        transform.position = targetPosition + offset;
         currentLookAhead = Vector3.zero;
         lookAheadVelocity = Vector3.zero;
         followVelocity = Vector3.zero;
