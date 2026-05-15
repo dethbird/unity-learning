@@ -162,8 +162,9 @@ public class CarController : MonoBehaviour
             return;
         }
 
-        Vector3 planarVelocity = Vector3.ProjectOnPlane(rb.linearVelocity, Vector3.up);
-        Vector3 driveDirection = Vector3.ProjectOnPlane(-transform.forward, Vector3.up).normalized;
+        Vector3 surfaceNormal = groundNormal.sqrMagnitude > 0.01f ? groundNormal : Vector3.up;
+        Vector3 planarVelocity = Vector3.ProjectOnPlane(rb.linearVelocity, surfaceNormal);
+        Vector3 driveDirection = Vector3.ProjectOnPlane(-transform.forward, surfaceNormal).normalized;
         if (driveDirection.sqrMagnitude < 0.0001f)
         {
             return;
@@ -215,21 +216,24 @@ public class CarController : MonoBehaviour
     {
         if (!isGrounded) return;
 
+        Vector3 surfaceNormal = groundNormal.sqrMagnitude > 0.01f ? groundNormal : Vector3.up;
         Vector3 forwardDir = -transform.forward;
-        Vector3 rightDir = transform.right;
 
         Vector3 velocity = rb.linearVelocity;
-        Vector3 verticalVelocity = Vector3.Project(velocity, Vector3.up);
 
-        Vector3 forwardVelocity = Vector3.Project(velocity, forwardDir);
-        Vector3 sidewaysVelocity = Vector3.Project(velocity, rightDir);
+        // Decompose into three orthogonal parts: along surface normal, along forward, along side.
+        // This avoids double-counting Y on ramps where forwardDir has a world-Y component.
+        Vector3 normalVelocity = Vector3.Project(velocity, surfaceNormal);
+        Vector3 planarVelocity = velocity - normalVelocity;
+        Vector3 forwardVelocity = Vector3.Project(planarVelocity, forwardDir);
+        Vector3 sidewaysVelocity = planarVelocity - forwardVelocity;
 
         if (input.HandbrakeHeld)
         {
             forwardVelocity *= handbrakeForwardBleed;
             sidewaysVelocity *= handbrakeSideGrip;
 
-            rb.linearVelocity = (forwardVelocity + sidewaysVelocity) * handbrakeSpeedBleed + verticalVelocity;
+            rb.linearVelocity = (forwardVelocity + sidewaysVelocity) * handbrakeSpeedBleed + normalVelocity;
 
             if (forwardVelocity.sqrMagnitude > 0.01f)
             {
@@ -243,7 +247,7 @@ public class CarController : MonoBehaviour
             return;
         }
 
-        rb.linearVelocity = forwardVelocity + sidewaysVelocity * normalSideGrip + verticalVelocity;
+        rb.linearVelocity = forwardVelocity + sidewaysVelocity * normalSideGrip + normalVelocity;
     }
 
     private void UpdateGrounded()
@@ -323,8 +327,9 @@ public class CarController : MonoBehaviour
         }
 
         Vector3 velocity = rb.linearVelocity;
-        Vector3 verticalVelocity = Vector3.Project(velocity, Vector3.up);
-        Vector3 planarVelocity = Vector3.ProjectOnPlane(velocity, Vector3.up);
+        Vector3 surfaceNormal = groundNormal.sqrMagnitude > 0.01f ? groundNormal : Vector3.up;
+        Vector3 verticalVelocity = Vector3.Project(velocity, surfaceNormal);
+        Vector3 planarVelocity = Vector3.ProjectOnPlane(velocity, surfaceNormal);
 
         float speed = planarVelocity.magnitude;
         if (speed < 0.01f)
@@ -332,7 +337,7 @@ public class CarController : MonoBehaviour
             return;
         }
 
-        Vector3 facingDirection = Vector3.ProjectOnPlane(-transform.forward, Vector3.up).normalized;
+        Vector3 facingDirection = Vector3.ProjectOnPlane(-transform.forward, surfaceNormal).normalized;
         if (facingDirection.sqrMagnitude < 0.0001f)
         {
             return;
