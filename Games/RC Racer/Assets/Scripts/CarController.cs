@@ -35,10 +35,12 @@ public class CarController : MonoBehaviour
     [Header("Ground / Air")]
     [SerializeField] private float groundCheckDistance = 0.45f;
     [SerializeField] private LayerMask groundLayerMask = ~0;
-    [SerializeField] private float airborneExtraGravity = 60f;
+    [SerializeField] private float airborneExtraGravity = 12f;
     [SerializeField] private float throttleVelocityAlignRate = 8f;
     [SerializeField] private float maxFallSpeed = 25f;
+    [SerializeField] private float maxLaunchSpeed = 6f;
     [SerializeField] private float landingAngularDamping = 0.5f;
+    [SerializeField] private float airbornePitchDamping = 0.85f;
 
     [Header("Reset Settings")]
     [SerializeField] private float resetHeight = 2f;
@@ -56,6 +58,7 @@ public class CarController : MonoBehaviour
     private bool wasGrounded;
     private Vector3 groundNormal = Vector3.up;
     private float landingSteeringResetTimer;
+    private float groundedDrag;
 
     public bool IsGrounded => isGrounded;
     public bool IsAirborne => !isGrounded;
@@ -67,6 +70,8 @@ public class CarController : MonoBehaviour
         input = GetComponent<CarInputReader>();
 
         rb.constraints = RigidbodyConstraints.FreezeRotationZ;
+
+        groundedDrag = rb.linearDamping;
 
         spawnPosition = transform.position;
         spawnRotation = transform.rotation;
@@ -89,7 +94,18 @@ public class CarController : MonoBehaviour
 
         if (!wasGrounded && isGrounded)
         {
+            rb.linearDamping = groundedDrag;
             AbsorbLandingImpact();
+        }
+        else if (wasGrounded && !isGrounded)
+        {
+            rb.linearDamping = 0f;
+            Vector3 v = rb.linearVelocity;
+            if (v.y > maxLaunchSpeed)
+            {
+                v.y = maxLaunchSpeed;
+                rb.linearVelocity = v;
+            }
         }
 
         ApplyAirborneGravity();
@@ -264,6 +280,11 @@ public class CarController : MonoBehaviour
             velocity.y = -maxFallSpeed;
             rb.linearVelocity = velocity;
         }
+
+        // Auto-level pitch: damp X angular velocity each frame so the car settles flat without wobble
+        Vector3 angVel = rb.angularVelocity;
+        angVel.x *= airbornePitchDamping;
+        rb.angularVelocity = angVel;
     }
 
     private void AlignVelocityToFacingWhenAccelerating()
@@ -306,20 +327,9 @@ public class CarController : MonoBehaviour
 
     private void AbsorbLandingImpact()
     {
+        // Keep horizontal momentum as-is; just kill vertical velocity to absorb bounce
         Vector3 velocity = rb.linearVelocity;
-        Vector3 planarVelocity = Vector3.ProjectOnPlane(velocity, Vector3.up);
-        float planarSpeed = planarVelocity.magnitude;
-        Vector3 facingDirection = Vector3.ProjectOnPlane(-transform.forward, Vector3.up).normalized;
-
-        if (facingDirection.sqrMagnitude > 0.0001f && planarSpeed > 0.01f)
-        {
-            velocity = facingDirection * planarSpeed;
-        }
-        else
-        {
-            velocity = planarVelocity;
-        }
-
+        velocity.y = 0f;
         rb.linearVelocity = velocity;
         rb.angularVelocity = Vector3.zero;
 
