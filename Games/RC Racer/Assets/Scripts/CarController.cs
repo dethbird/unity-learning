@@ -38,10 +38,11 @@ public class CarController : MonoBehaviour
     [SerializeField] private float airborneExtraGravity = 12f;
     [SerializeField] private float throttleVelocityAlignRate = 8f;
     [SerializeField] private float maxFallSpeed = 25f;
-    [SerializeField] private float maxLaunchSpeed = 6f;
+    [SerializeField] private float maxLaunchSpeed = 1f;
 
     [SerializeField] private float pitchLevelStartDistance = 1.8f;
     [SerializeField] private float preLandingFloatStrength = 10f;
+    [SerializeField] private float boosterImpulse = 0.05f;
 
     [Header("Reset Settings")]
     [SerializeField] private float resetHeight = 2f;
@@ -60,6 +61,7 @@ public class CarController : MonoBehaviour
     private Vector3 groundNormal = Vector3.up;
     private float landingSteeringResetTimer;
     private float groundedDrag;
+    private bool isOnAccelerator;
 
     public bool IsGrounded => isGrounded;
     public bool IsAirborne => !isGrounded;
@@ -90,8 +92,14 @@ public class CarController : MonoBehaviour
 
     private void FixedUpdate()
     {
+        bool wasOnAccelerator = isOnAccelerator;
         wasGrounded = isGrounded;
         UpdateGrounded();
+
+        if (!wasOnAccelerator && isOnAccelerator)
+        {
+            ApplyAcceleratorBoost();
+        }
 
         if (!wasGrounded && isGrounded)
         {
@@ -250,6 +258,27 @@ public class CarController : MonoBehaviour
         rb.linearVelocity = forwardVelocity + sidewaysVelocity * normalSideGrip + normalVelocity;
     }
 
+    private void ApplyAcceleratorBoost()
+    {
+        Vector3 surfaceNormal = groundNormal.sqrMagnitude > 0.01f ? groundNormal : Vector3.up;
+        Vector3 boostDirection = Vector3.ProjectOnPlane(-transform.forward, surfaceNormal).normalized;
+
+        if (boostDirection.sqrMagnitude < 0.0001f)
+        {
+            Vector3 planarVelocity = Vector3.ProjectOnPlane(rb.linearVelocity, surfaceNormal);
+            boostDirection = planarVelocity.sqrMagnitude > 0.0001f
+                ? planarVelocity.normalized
+                : Vector3.ProjectOnPlane(-transform.forward, Vector3.up).normalized;
+        }
+
+        if (boostDirection.sqrMagnitude < 0.0001f)
+        {
+            return;
+        }
+
+        rb.AddForce(boostDirection * boosterImpulse, ForceMode.VelocityChange);
+    }
+
     private void UpdateGrounded()
     {
         Vector3 origin = transform.position + Vector3.up * 0.1f;
@@ -264,12 +293,14 @@ public class CarController : MonoBehaviour
         if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, rayDistance, groundLayerMask, QueryTriggerInteraction.Ignore))
         {
             isGrounded = true;
-            groundNormal = hit.normal;
+            groundNormal = hit.normal.sqrMagnitude > 0.01f ? hit.normal : Vector3.up;
+            isOnAccelerator = hit.collider.CompareTag("Booster");
         }
         else
         {
             isGrounded = false;
             groundNormal = Vector3.up;
+            isOnAccelerator = false;
         }
     }
 
