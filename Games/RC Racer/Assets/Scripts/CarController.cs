@@ -39,10 +39,10 @@ public class CarController : MonoBehaviour
     [SerializeField] private float airborneExtraGravity = 12f;
     [SerializeField] private float throttleVelocityAlignRate = 8f;
     [SerializeField] private float maxFallSpeed = 25f;
-    [SerializeField] private float maxLaunchSpeed = 10f;
+    [SerializeField] private float maxLaunchSpeed = 8f;
     [SerializeField] private float groundProbeForwardOffset = 0.6f;
 
-    [SerializeField] private float boosterImpulse = 8f;
+    [SerializeField] private float boosterImpulse = 4f;
 
     [Header("Reset Settings")]
     [SerializeField] private float resetHeight = 2f;
