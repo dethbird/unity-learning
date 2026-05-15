@@ -39,8 +39,9 @@ public class CarController : MonoBehaviour
     [SerializeField] private float throttleVelocityAlignRate = 8f;
     [SerializeField] private float maxFallSpeed = 25f;
     [SerializeField] private float maxLaunchSpeed = 6f;
-    [SerializeField] private float landingAngularDamping = 0.5f;
+
     [SerializeField] private float airbornePitchDamping = 0.85f;
+    [SerializeField] private float pitchLevelStartDistance = 1.8f;
 
     [Header("Reset Settings")]
     [SerializeField] private float resetHeight = 2f;
@@ -268,6 +269,16 @@ public class CarController : MonoBehaviour
         }
     }
 
+    private float GetHeightAboveGround()
+    {
+        if (Physics.Raycast(transform.position, Vector3.down, out RaycastHit hit, 50f, groundLayerMask, QueryTriggerInteraction.Ignore))
+        {
+            return hit.distance;
+        }
+
+        return float.MaxValue;
+    }
+
     private void ApplyAirborneGravity()
     {
         if (isGrounded) return;
@@ -281,10 +292,17 @@ public class CarController : MonoBehaviour
             rb.linearVelocity = velocity;
         }
 
-        // Auto-level pitch: damp X angular velocity each frame so the car settles flat without wobble
-        Vector3 angVel = rb.angularVelocity;
-        angVel.x *= airbornePitchDamping;
-        rb.angularVelocity = angVel;
+        // Auto-level pitch: only damp when close to ground so the car holds its arc
+        // high up and snaps flat just before touchdown
+        float heightAboveGround = GetHeightAboveGround();
+        if (heightAboveGround < pitchLevelStartDistance)
+        {
+            float t = 1f - (heightAboveGround / pitchLevelStartDistance);
+            float damp = Mathf.Lerp(1f, airbornePitchDamping, t);
+            Vector3 angVel = rb.angularVelocity;
+            angVel.x *= damp;
+            rb.angularVelocity = angVel;
+        }
     }
 
     private void AlignVelocityToFacingWhenAccelerating()
