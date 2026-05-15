@@ -7,7 +7,10 @@ public class IsometricCameraFollow : MonoBehaviour
     [SerializeField] private bool enableTargetInterpolation = true;
 
     [Header("Startup")]
-    [SerializeField] private Vector3 startupOffset = new Vector3(-6.54f, 7.04f, -5.55f);
+    [SerializeField] private bool centerOnTargetAtStartup = true;
+    [SerializeField] private Vector3 startupRotationEuler = new Vector3(35f, 50f, 0f);
+    [SerializeField] private float startupFollowDistance = 11f;
+    [SerializeField] private Vector3 startupFramingOffset = Vector3.zero;
 
     [Header("Look Ahead")]
     [SerializeField] private bool invertTargetForward = true;
@@ -74,7 +77,28 @@ public class IsometricCameraFollow : MonoBehaviour
         }
 
         Vector3 targetPosition = targetRigidbody != null ? targetRigidbody.position : target.position;
-        offset = startupOffset;
+
+        if (centerOnTargetAtStartup)
+        {
+            transform.rotation = Quaternion.Euler(startupRotationEuler);
+
+            Vector3 viewDirection = -transform.forward;
+            if (viewDirection.sqrMagnitude > 0.001f)
+            {
+                viewDirection.Normalize();
+            }
+
+            Vector3 framingOffset = transform.right * startupFramingOffset.x
+                + Vector3.up * startupFramingOffset.y
+                + transform.forward * startupFramingOffset.z;
+
+            offset = viewDirection * startupFollowDistance + framingOffset;
+        }
+        else
+        {
+            offset = transform.position - targetPosition;
+        }
+
         transform.position = targetPosition + offset;
         currentLookAhead = Vector3.zero;
         lookAheadVelocity = Vector3.zero;
