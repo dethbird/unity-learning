@@ -40,7 +40,6 @@ public class CarController : MonoBehaviour
     [SerializeField] private float maxFallSpeed = 25f;
     [SerializeField] private float maxLaunchSpeed = 6f;
 
-    [SerializeField] private float airbornePitchDamping = 0.85f;
     [SerializeField] private float pitchLevelStartDistance = 1.8f;
     [SerializeField] private float preLandingFloatStrength = 10f;
 
