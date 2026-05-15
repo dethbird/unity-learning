@@ -39,10 +39,10 @@ public class CarController : MonoBehaviour
     [SerializeField] private float airborneExtraGravity = 12f;
     [SerializeField] private float throttleVelocityAlignRate = 8f;
     [SerializeField] private float maxFallSpeed = 25f;
-    [SerializeField] private float maxLaunchSpeed = 25f;
+    [SerializeField] private float maxLaunchSpeed = 10f;
     [SerializeField] private float groundProbeForwardOffset = 0.6f;
 
-    [SerializeField] private float boosterImpulse = 18f;
+    [SerializeField] private float boosterImpulse = 8f;
 
     [Header("Reset Settings")]
     [SerializeField] private float resetHeight = 2f;
@@ -59,6 +59,8 @@ public class CarController : MonoBehaviour
     private bool isGrounded;
     private bool wasGrounded;
     private Vector3 groundNormal = Vector3.up;
+    private bool hasFrontGroundHit;
+    private Vector3 frontGroundNormal = Vector3.up;
     private float landingSteeringResetTimer;
     private float groundedDrag;
     private bool isOnAccelerator;
@@ -198,7 +200,7 @@ public class CarController : MonoBehaviour
             return;
         }
 
-        Vector3 surfaceNormal = groundNormal.sqrMagnitude > 0.01f ? groundNormal : Vector3.up;
+        Vector3 surfaceNormal = GetDriveSurfaceNormal();
         Vector3 planarVelocity = Vector3.ProjectOnPlane(rb.linearVelocity, surfaceNormal);
         Vector3 driveDirection = Vector3.ProjectOnPlane(-transform.forward, surfaceNormal).normalized;
         if (driveDirection.sqrMagnitude < 0.0001f)
@@ -288,7 +290,7 @@ public class CarController : MonoBehaviour
 
     private void ApplyAcceleratorBoost()
     {
-        Vector3 surfaceNormal = groundNormal.sqrMagnitude > 0.01f ? groundNormal : Vector3.up;
+        Vector3 surfaceNormal = GetDriveSurfaceNormal();
         Vector3 boostDirection = Vector3.ProjectOnPlane(-transform.forward, surfaceNormal).normalized;
 
         if (boostDirection.sqrMagnitude < 0.0001f)
@@ -313,11 +315,15 @@ public class CarController : MonoBehaviour
         {
             isGrounded = false;
             groundNormal = Vector3.up;
+            hasFrontGroundHit = false;
+            frontGroundNormal = Vector3.up;
             return;
         }
 
         Vector3 normalSum = Vector3.zero;
         int hitCount = 0;
+        hasFrontGroundHit = false;
+        frontGroundNormal = Vector3.up;
 
         if (TryGetGroundHit(centerOrigin, rayDistance, out RaycastHit centerHit))
         {
@@ -329,6 +335,8 @@ public class CarController : MonoBehaviour
         {
             normalSum += frontHit.normal;
             hitCount++;
+            hasFrontGroundHit = true;
+            frontGroundNormal = frontHit.normal.sqrMagnitude > 0.01f ? frontHit.normal.normalized : Vector3.up;
         }
 
         if (TryGetGroundHit(rearOrigin, rayDistance, out RaycastHit rearHit))
@@ -437,6 +445,18 @@ public class CarController : MonoBehaviour
         return foundHit;
     }
 
+    private Vector3 GetDriveSurfaceNormal()
+    {
+        Vector3 surfaceNormal = groundNormal.sqrMagnitude > 0.01f ? groundNormal : Vector3.up;
+
+        if (hasFrontGroundHit && frontGroundNormal.y < surfaceNormal.y - 0.01f)
+        {
+            surfaceNormal = Vector3.Slerp(surfaceNormal, frontGroundNormal, 0.75f).normalized;
+        }
+
+        return surfaceNormal.sqrMagnitude > 0.01f ? surfaceNormal : Vector3.up;
+    }
+
     private void OnCollisionEnter(Collision collision)
     {
         TrackBoosterContact(collision.collider);
@@ -485,7 +505,7 @@ public class CarController : MonoBehaviour
         }
 
         Vector3 velocity = rb.linearVelocity;
-        Vector3 surfaceNormal = groundNormal.sqrMagnitude > 0.01f ? groundNormal : Vector3.up;
+        Vector3 surfaceNormal = GetDriveSurfaceNormal();
         Vector3 verticalVelocity = Vector3.Project(velocity, surfaceNormal);
         Vector3 planarVelocity = Vector3.ProjectOnPlane(velocity, surfaceNormal);
 
