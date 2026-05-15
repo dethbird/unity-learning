@@ -42,6 +42,7 @@ public class CarController : MonoBehaviour
 
     [SerializeField] private float airbornePitchDamping = 0.85f;
     [SerializeField] private float pitchLevelStartDistance = 1.8f;
+    [SerializeField] private float preLandingFloatStrength = 10f;
 
     [Header("Reset Settings")]
     [SerializeField] private float resetHeight = 2f;
@@ -292,16 +293,26 @@ public class CarController : MonoBehaviour
             rb.linearVelocity = velocity;
         }
 
-        // Auto-level pitch: only damp when close to ground so the car holds its arc
-        // high up and snaps flat just before touchdown
+        // Pre-landing phase: smoothly level and cushion fall when close to ground
         float heightAboveGround = GetHeightAboveGround();
         if (heightAboveGround < pitchLevelStartDistance)
         {
-            float t = 1f - (heightAboveGround / pitchLevelStartDistance);
-            float damp = Mathf.Lerp(1f, airbornePitchDamping, t);
+            float t = 1f - Mathf.Clamp01(heightAboveGround / pitchLevelStartDistance);
+
+            // Steer angular velocity toward level pitch/roll — don't use MoveRotation
+            // as it fights gravity integration on non-kinematic rigidbodies
             Vector3 angVel = rb.angularVelocity;
-            angVel.x *= damp;
+            angVel.x = Mathf.MoveTowards(angVel.x, 0f, preLandingFloatStrength * t * Time.fixedDeltaTime);
+            angVel.z = Mathf.MoveTowards(angVel.z, 0f, preLandingFloatStrength * t * Time.fixedDeltaTime);
             rb.angularVelocity = angVel;
+
+            // Once mostly level, add extra pull-down so the car snaps to the ground quickly
+            float pitchAngle = transform.eulerAngles.x;
+            if (pitchAngle > 180f) pitchAngle -= 360f;
+            if (Mathf.Abs(pitchAngle) < 15f)
+            {
+                rb.AddForce(Vector3.down * airborneExtraGravity * 3f * t, ForceMode.Acceleration);
+            }
         }
     }
 
@@ -345,13 +356,11 @@ public class CarController : MonoBehaviour
 
     private void AbsorbLandingImpact()
     {
-        // Keep horizontal momentum as-is; just kill vertical velocity to absorb bounce
         Vector3 velocity = rb.linearVelocity;
         velocity.y = 0f;
         rb.linearVelocity = velocity;
         rb.angularVelocity = Vector3.zero;
 
-        // Snap rotation upright to clear any tilt accumulated while airborne
         Vector3 euler = transform.eulerAngles;
         transform.rotation = Quaternion.Euler(0f, euler.y, 0f);
     }
